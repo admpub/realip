@@ -51,20 +51,20 @@ func isPrivateAddress(address string) (bool, error) {
 
 // FromRequest return client's real public IP address from http request headers.
 func FromRequest(r *http.Request) string {
-	return XRealIP(r.Header.Get("X-Real-Ip"), r.Header.Get("X-Forwarded-For"))
+	return XRealIP(r.Header.Get("X-Real-Ip"), r.Header.Get("X-Forwarded-For"), r.RemoteAddr)
 }
 
-func XRealIP(xRealIP, xForwardedFor string) string {
+func XRealIP(xRealIP, xForwardedFor, remoteAddr string) string {
 	// If both empty, return IP from remote address
-	if xRealIP == "" && xForwardedFor == "" {
+	if len(xRealIP) == 0 && len(xForwardedFor) == 0 {
 		var remoteIP string
 
 		// If there are colon in remote address, remove the port number
 		// otherwise, return remote address as is
-		if strings.ContainsRune(r.RemoteAddr, ':') {
-			remoteIP, _, _ = net.SplitHostPort(r.RemoteAddr)
+		if strings.ContainsRune(remoteAddr, ':') {
+			remoteIP, _, _ = net.SplitHostPort(remoteAddr)
 		} else {
-			remoteIP = r.RemoteAddr
+			remoteIP = remoteAddr
 		}
 
 		return remoteIP
