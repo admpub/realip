@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+// Should use canonical format of the header key s
+// https://golang.org/pkg/net/http/#CanonicalHeaderKey
+var xForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
+var xRealIP = http.CanonicalHeaderKey("X-Real-IP")
+
+// RFC7239 defines a new "Forwarded: " header designed to replace the
+// existing use of X-Forwarded-* headers.
+// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
+var forwarded = http.CanonicalHeaderKey("Forwarded")
+
 var cidrs []*net.IPNet
 
 func init() {
@@ -49,9 +59,9 @@ func isPrivateAddress(address string) (bool, error) {
 	return false, nil
 }
 
-// FromRequest return client's real public IP address from http request headers.
+// FromRequest returns client's real public IP address from http request headers.
 func FromRequest(r *http.Request) string {
-	return XRealIP(r.Header.Get("X-Real-Ip"), r.Header.Get("X-Forwarded-For"), r.RemoteAddr)
+	return XRealIP(r.Header.Get(xRealIP), r.Header.Get(xForwardedFor), r.RemoteAddr)
 }
 
 func XRealIP(xRealIP, xForwardedFor, remoteAddr string) string {
@@ -73,6 +83,9 @@ func XRealIP(xRealIP, xForwardedFor, remoteAddr string) string {
 	// Check list of IP in X-Forwarded-For and return the first global address
 	for _, address := range strings.Split(xForwardedFor, ",") {
 		address = strings.TrimSpace(address)
+		if len(address) == 0 {
+			continue
+		}
 		isPrivate, err := isPrivateAddress(address)
 		if !isPrivate && err == nil {
 			return address
