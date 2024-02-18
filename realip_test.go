@@ -73,15 +73,15 @@ func TestRealIP(t *testing.T) {
 			expected: publicAddr1,
 		}, {
 			name:     "Has X-Forwarded-For",
-			request:  newRequest("", "", publicAddr1),
+			request:  newRequest("127.0.0.100", "", publicAddr1),
 			expected: publicAddr1,
 		}, {
 			name:     "Has multiple X-Forwarded-For",
-			request:  newRequest("", "", localAddr, publicAddr1, publicAddr2),
+			request:  newRequest("127.0.0.100", "", localAddr, publicAddr1, publicAddr2),
 			expected: publicAddr2,
 		}, {
 			name:     "Has X-Real-IP",
-			request:  newRequest("", publicAddr1),
+			request:  newRequest("127.0.0.100", publicAddr1),
 			expected: publicAddr1,
 		},
 	}
