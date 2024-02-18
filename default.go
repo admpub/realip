@@ -7,6 +7,10 @@ import (
 
 var defaultConfig = New().SetIgnorePrivateIP(true)
 
+func Default() *Config {
+	return defaultConfig
+}
+
 var defaultTrustedProxies = []string{"0.0.0.0/0", "::/0"}
 var defaultUnsafeTrustedIPs = []net.IP{net.ParseIP("0.0.0.0"), net.ParseIP("::")}
 var defaultTrustedCIDRs = []*net.IPNet{
