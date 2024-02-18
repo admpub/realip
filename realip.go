@@ -64,20 +64,24 @@ func FromRequest(r *http.Request) string {
 	return XRealIP(r.Header.Get(xRealIP), r.Header.Get(xForwardedFor), r.RemoteAddr)
 }
 
-func XRealIP(xRealIP, xForwardedFor, remoteAddr string) string {
+func XRemoteIP(remoteAddr string) string {
+	var remoteIP string
+
+	// If there are colon in remote address, remove the port number
+	// otherwise, return remote address as is
+	if strings.ContainsRune(remoteAddr, ':') {
+		remoteIP, _, _ = net.SplitHostPort(remoteAddr)
+	} else {
+		remoteIP = remoteAddr
+	}
+
+	return remoteIP
+}
+
+func XRealIP(xRealIP, xForwardedFor, remoteAddr string, trustedProxies ...string) string {
 	// If both empty, return IP from remote address
 	if len(xRealIP) == 0 && len(xForwardedFor) == 0 {
-		var remoteIP string
-
-		// If there are colon in remote address, remove the port number
-		// otherwise, return remote address as is
-		if strings.ContainsRune(remoteAddr, ':') {
-			remoteIP, _, _ = net.SplitHostPort(remoteAddr)
-		} else {
-			remoteIP = remoteAddr
-		}
-
-		return remoteIP
+		return XRemoteIP(remoteAddr)
 	}
 
 	// Check list of IP in X-Forwarded-For and return the first global address
