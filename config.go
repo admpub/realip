@@ -92,8 +92,8 @@ func (c *Config) SetTrustedProxies(trustedProxies []string) error {
 	return c.parseTrustedProxies()
 }
 
-// isUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
-func (c *Config) isUnsafeTrustedProxies() bool {
+// IsUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
+func (c *Config) IsUnsafeTrustedProxies() bool {
 	for _, ip := range defaultUnsafeTrustedIPs {
 		if c.isTrustedProxy(ip) {
 			return true
@@ -122,8 +122,8 @@ func (c *Config) isTrustedProxy(ip net.IP) bool {
 	return false
 }
 
-// validateIPHeader will parse X-Forwarded-For header and return the trusted client IP address
-func (c *Config) validateIPHeader(headerValue string, headerName string, ignorePrivateIP bool) (clientIP string, valid bool) {
+// ValidateIPHeader will parse X-Forwarded-For header and return the trusted client IP address
+func (c *Config) ValidateIPHeader(headerValue string, headerName string, ignorePrivateIP bool) (clientIP string, valid bool) {
 	if len(headerValue) == 0 {
 		return
 	}
@@ -203,7 +203,7 @@ func (c *Config) ClientIP(remoteAddress string, header func(string) string) stri
 
 	if trusted && c.ForwardedByClientIP && c.RemoteIPHeaders != nil {
 		for _, headerName := range c.RemoteIPHeaders {
-			ip, valid := c.validateIPHeader(header(headerName), headerName, c.ignorePrivateIP)
+			ip, valid := c.ValidateIPHeader(header(headerName), headerName, c.ignorePrivateIP)
 			if valid {
 				return ip
 			}
