@@ -93,3 +93,31 @@ func TestRealIP(t *testing.T) {
 		}
 	}
 }
+
+func TestClientIP(t *testing.T) {
+	header := func(name string) string {
+		t.Logf(`----------------> %s`, name)
+		switch name {
+		case headerForwarded:
+			return ``
+		case headerXForwardedFor:
+			return `119.14.55.11`
+		case headerXRealIP:
+			return `119.14.55.11`
+		default:
+			return ``
+		}
+	}
+	defaultConfig.SetTrustedProxies([]string{})
+	actual := defaultConfig.ClientIP(`127.0.0.1:53878`, header)
+	expected := `127.0.0.1`
+	if expected != actual {
+		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
+	}
+	defaultConfig.TrustAll()
+	actual = defaultConfig.ClientIP(`127.0.0.1:53878`, header)
+	expected = `119.14.55.11`
+	if expected != actual {
+		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
+	}
+}

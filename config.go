@@ -33,10 +33,7 @@ func (c *Config) Init() *Config {
 	c.ForwardedByClientIP = true
 	c.RemoteIPHeaders = []string{headerForwarded, headerXForwardedFor, headerXRealIP}
 	c.ignorePrivateIP = false
-	c.trustedProxies = make([]string, len(defaultTrustedProxies))
-	copy(c.trustedProxies, defaultTrustedProxies)
-	c.trustedCIDRs = defaultTrustedCIDRs
-	return c
+	return c.TrustAll()
 }
 
 func (c *Config) SetIgnorePrivateIP(ignorePrivateIP bool) *Config {
@@ -90,6 +87,13 @@ func (c *Config) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 func (c *Config) SetTrustedProxies(trustedProxies []string) error {
 	c.trustedProxies = trustedProxies
 	return c.parseTrustedProxies()
+}
+
+func (c *Config) TrustAll() *Config {
+	c.trustedProxies = make([]string, len(defaultTrustedProxies))
+	copy(c.trustedProxies, defaultTrustedProxies)
+	c.trustedCIDRs = defaultTrustedCIDRs
+	return c
 }
 
 // IsUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
