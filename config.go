@@ -2,12 +2,16 @@ package realip
 
 import (
 	"net"
+	"os"
 	"strings"
 )
+
+const EnvKey = `REALIP_TRUSTED_PROXIES`
 
 func New() *Config {
 	c := &Config{}
 	c.Init()
+	c.SetTrustedProxiesByEnv()
 	return c
 }
 
@@ -94,6 +98,25 @@ func (c *Config) TrustAll() *Config {
 	copy(c.trustedProxies, defaultTrustedProxies)
 	c.trustedCIDRs = defaultTrustedCIDRs
 	return c
+}
+
+func (c *Config) SetTrustedProxiesByEnv() error {
+	envValue := os.Getenv(EnvKey)
+	if len(envValue) == 0 {
+		return nil
+	}
+	items := strings.Split(envValue, `,`)
+	trustedProxies := make([]string, 0, len(items))
+	for _, tp := range items {
+		tp = strings.TrimSpace(tp)
+		if len(tp) > 0 {
+			trustedProxies = append(trustedProxies, tp)
+		}
+	}
+	if len(trustedProxies) > 0 {
+		return c.SetTrustedProxies(trustedProxies)
+	}
+	return nil
 }
 
 // IsUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
