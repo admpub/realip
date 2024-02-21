@@ -3,6 +3,7 @@ package realip
 import (
 	"net"
 	"net/http"
+	"strings"
 )
 
 var defaultConfig = New().SetIgnorePrivateIP(true)
@@ -33,6 +34,22 @@ var headerXRealIP = http.CanonicalHeaderKey("X-Real-IP")
 // existing use of X-Forwarded-* headers.
 // e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
 var headerForwarded = http.CanonicalHeaderKey("Forwarded")
+
+func HeaderIsXForwardedFor(headerName string) bool {
+	return headerXForwardedFor == http.CanonicalHeaderKey(headerName)
+}
+
+func HeaderIsXRealIP(headerName string) bool {
+	return headerXRealIP == http.CanonicalHeaderKey(headerName)
+}
+
+func HeaderForwarded(headerName string) bool {
+	return headerForwarded == http.CanonicalHeaderKey(headerName)
+}
+
+func HeaderEquals(headerNameA string, headerNameB string) bool {
+	return strings.EqualFold(headerNameA, headerNameB)
+}
 
 var defaultPrivateCIDRs []*net.IPNet
 
