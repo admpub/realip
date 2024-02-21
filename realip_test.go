@@ -23,7 +23,7 @@ func TestIsPrivateAddr(t *testing.T) {
 	}
 
 	for addr, isLocal := range testData {
-		isPrivate, err := isPrivateAddress(addr)
+		isPrivate, err := IsPrivateAddress(addr)
 		if err != nil {
 			t.Errorf("fail processing %s: %v", addr, err)
 		}

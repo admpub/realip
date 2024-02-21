@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-func isPrivateAddress(address string) (bool, error) {
+func IsPrivateAddress(address string) (bool, error) {
 	ipAddress := net.ParseIP(address)
-	return isPrivateIP(ipAddress)
+	return IsPrivateIP(ipAddress)
 }
 
 // isPrivateIP works by checking if the address is under private CIDR blocks.
@@ -17,7 +17,7 @@ func isPrivateAddress(address string) (bool, error) {
 // https://en.wikipedia.org/wiki/Private_network
 //
 // https://en.wikipedia.org/wiki/Link-local_address
-func isPrivateIP(ipAddress net.IP) (bool, error) {
+func IsPrivateIP(ipAddress net.IP) (bool, error) {
 	if ipAddress == nil {
 		return false, errors.New("address is not valid")
 	}
@@ -32,7 +32,7 @@ func isPrivateIP(ipAddress net.IP) (bool, error) {
 
 // parseIP parse a string representation of an IP and returns a net.IP with the
 // minimum byte representation or nil if input is invalid.
-func parseIP(ip string) net.IP {
+func ParseIP(ip string) net.IP {
 	parsedIP := net.ParseIP(ip)
 
 	if ipv4 := parsedIP.To4(); ipv4 != nil {
@@ -44,9 +44,9 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
-func parseCIDR(ipStr string) (*net.IPNet, error) {
+func ParseCIDR(ipStr string) (*net.IPNet, error) {
 	if !strings.Contains(ipStr, "/") {
-		ip := parseIP(ipStr)
+		ip := ParseIP(ipStr)
 		if ip == nil {
 			return nil, &net.ParseError{Type: "IP address", Text: ipStr}
 		}

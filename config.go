@@ -67,7 +67,7 @@ func (c *Config) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 
 	cidr := make([]*net.IPNet, 0, len(c.trustedProxies))
 	for _, trustedProxy := range c.trustedProxies {
-		cidrNet, err := parseCIDR(trustedProxy)
+		cidrNet, err := ParseCIDR(trustedProxy)
 		if err != nil {
 			return cidr, err
 		}
@@ -170,7 +170,7 @@ func (c *Config) ValidateIPHeader(headerValue string, headerName string, ignoreP
 			break
 		}
 		if ignorePrivateIP {
-			isPrivate, err := isPrivateIP(ip)
+			isPrivate, err := IsPrivateIP(ip)
 			if err != nil || isPrivate {
 				continue
 			}

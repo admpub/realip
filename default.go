@@ -67,7 +67,7 @@ func init() {
 
 	defaultPrivateCIDRs = make([]*net.IPNet, len(maxCidrBlocks))
 	for i, maxCidrBlock := range maxCidrBlocks {
-		cidr, err := parseCIDR(maxCidrBlock)
+		cidr, err := ParseCIDR(maxCidrBlock)
 		if err != nil {
 			panic(err)
 		}
