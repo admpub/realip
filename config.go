@@ -64,13 +64,13 @@ func (c *Config) IgnorePrivateIP() bool {
 	return c.ignorePrivateIP
 }
 
-func (c *Config) prepareTrustedCIDRs() ([]*net.IPNet, error) {
-	if c.trustedProxies == nil {
+func PrepareTrustedCIDRs(trustedProxies []string) ([]*net.IPNet, error) {
+	if trustedProxies == nil {
 		return nil, nil
 	}
 
-	cidr := make([]*net.IPNet, 0, len(c.trustedProxies))
-	for _, trustedProxy := range c.trustedProxies {
+	cidr := make([]*net.IPNet, 0, len(trustedProxies))
+	for _, trustedProxy := range trustedProxies {
 		cidrNet, err := ParseCIDR(trustedProxy)
 		if err != nil {
 			return cidr, err
@@ -90,7 +90,22 @@ func (c *Config) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 // return the remote address directly.
 func (c *Config) SetTrustedProxies(trustedProxies []string) error {
 	c.trustedProxies = trustedProxies
-	return c.parseTrustedProxies()
+	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
+	if err != nil {
+		return err
+	}
+	c.trustedCIDRs = trustedCIDRs
+	return nil
+}
+
+func (c *Config) AddTrustedProxies(trustedProxies ...string) error {
+	c.trustedProxies = append(c.trustedProxies, c.trustedProxies...)
+	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
+	if err != nil {
+		return err
+	}
+	c.trustedCIDRs = append(c.trustedCIDRs, trustedCIDRs...)
+	return nil
 }
 
 func (c *Config) TrustAll() *Config {
@@ -127,13 +142,6 @@ func (c *Config) IsUnsafeTrustedProxies() bool {
 		}
 	}
 	return false
-}
-
-// parseTrustedProxies parse Engine.trustedProxies to Engine.trustedCIDRs
-func (c *Config) parseTrustedProxies() error {
-	trustedCIDRs, err := c.prepareTrustedCIDRs()
-	c.trustedCIDRs = trustedCIDRs
-	return err
 }
 
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
