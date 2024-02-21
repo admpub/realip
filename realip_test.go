@@ -5,6 +5,18 @@ import (
 	"testing"
 )
 
+func TestCanonicalHeaderKey(t *testing.T) {
+	if http.CanonicalHeaderKey("X-Forwarded-For") != HeaderXForwardedFor {
+		t.Fatalf("HeaderXForwardedFor: expected %s but get %s", http.CanonicalHeaderKey("X-Forwarded-For"), HeaderXForwardedFor)
+	}
+	if http.CanonicalHeaderKey("X-Real-IP") != HeaderXRealIP {
+		t.Fatalf("HeaderXRealIP: expected %s but get %s", http.CanonicalHeaderKey("X-Real-IP"), HeaderXRealIP)
+	}
+	if http.CanonicalHeaderKey("Forwarded") != HeaderForwarded {
+		t.Fatalf("HeaderForwarded: expected %s but get %s", http.CanonicalHeaderKey("Forwarded"), HeaderForwarded)
+	}
+}
+
 func TestIsPrivateAddr(t *testing.T) {
 	testData := map[string]bool{
 		"127.0.0.0":   true,
@@ -98,11 +110,11 @@ func TestClientIP(t *testing.T) {
 	header := func(name string) string {
 		t.Logf(`----------------> %s`, name)
 		switch name {
-		case headerForwarded:
+		case HeaderForwarded:
 			return ``
-		case headerXForwardedFor:
+		case HeaderXForwardedFor:
 			return `119.14.55.11`
-		case headerXRealIP:
+		case HeaderXRealIP:
 			return `119.14.55.11`
 		default:
 			return ``

@@ -35,7 +35,7 @@ type Config struct {
 
 func (c *Config) Init() *Config {
 	c.ForwardedByClientIP = true
-	c.RemoteIPHeaders = []string{headerForwarded, headerXForwardedFor, headerXRealIP}
+	c.RemoteIPHeaders = []string{HeaderForwarded, HeaderXForwardedFor, HeaderXRealIP}
 	c.ignorePrivateIP = false
 	return c.TrustAll()
 }
@@ -163,7 +163,7 @@ func (c *Config) ValidateIPHeader(headerValue string, headerName string, ignoreP
 		return
 	}
 	var items []string
-	if headerName == headerForwarded {
+	if headerName == HeaderForwarded {
 		for _, item := range strings.Split(headerValue, ";") {
 			item = strings.TrimSpace(item)
 			if len(item) == 0 {

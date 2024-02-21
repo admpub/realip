@@ -27,24 +27,24 @@ var defaultTrustedCIDRs = []*net.IPNet{
 
 // Should use canonical format of the header key s
 // https://golang.org/pkg/net/http/#CanonicalHeaderKey
-var headerXForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
-var headerXRealIP = http.CanonicalHeaderKey("X-Real-IP")
+const HeaderXForwardedFor = "X-Forwarded-For"
+const HeaderXRealIP = "X-Real-Ip"
 
 // RFC7239 defines a new "Forwarded: " header designed to replace the
 // existing use of X-Forwarded-* headers.
 // e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
-var headerForwarded = http.CanonicalHeaderKey("Forwarded")
+const HeaderForwarded = "Forwarded"
 
 func HeaderIsXForwardedFor(headerName string) bool {
-	return headerXForwardedFor == http.CanonicalHeaderKey(headerName)
+	return HeaderXForwardedFor == http.CanonicalHeaderKey(headerName)
 }
 
 func HeaderIsXRealIP(headerName string) bool {
-	return headerXRealIP == http.CanonicalHeaderKey(headerName)
+	return HeaderXRealIP == http.CanonicalHeaderKey(headerName)
 }
 
-func HeaderForwarded(headerName string) bool {
-	return headerForwarded == http.CanonicalHeaderKey(headerName)
+func HeaderIsForwarded(headerName string) bool {
+	return HeaderForwarded == http.CanonicalHeaderKey(headerName)
 }
 
 func HeaderEquals(headerNameA string, headerNameB string) bool {
