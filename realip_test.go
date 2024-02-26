@@ -2,6 +2,7 @@ package realip
 
 import (
 	"net/http"
+	"os"
 	"testing"
 )
 
@@ -113,7 +114,7 @@ func TestClientIP(t *testing.T) {
 		case HeaderForwarded:
 			return ``
 		case HeaderXForwardedFor:
-			return `119.14.55.11`
+			return `119.14.55.13,119.14.55.12,119.14.55.11`
 		case HeaderXRealIP:
 			return `119.14.55.11`
 		default:
@@ -126,9 +127,20 @@ func TestClientIP(t *testing.T) {
 	if expected != actual {
 		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
 	}
-	defaultConfig.TrustAll()
+
+	os.Setenv(EnvKey, `127.0.0.1,119.14.55.11`)
+	defaultConfig.SetTrustedProxiesByEnv()
 	actual = defaultConfig.ClientIP(`127.0.0.1:53878`, header)
-	expected = `119.14.55.11`
+	expected = `119.14.55.12`
+	if expected != actual {
+		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
+	}
+
+	defaultConfig.TrustAll()
+	os.Setenv(EnvKey, ``)
+	defaultConfig.SetTrustedProxiesByEnv()
+	actual = defaultConfig.ClientIP(`127.0.0.1:53878`, header)
+	expected = `119.14.55.13`
 	if expected != actual {
 		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
 	}

@@ -1,9 +1,13 @@
 package realip
 
 import (
+	"context"
+	"log"
 	"net"
 	"os"
 	"strings"
+	"sync"
+	"time"
 )
 
 const EnvKey = `REALIP_TRUSTED_PROXIES`
@@ -29,8 +33,13 @@ type Config struct {
 	RemoteIPHeaders []string
 
 	ignorePrivateIP bool
+	trustedMutex    sync.RWMutex
 	trustedProxies  []string
 	trustedCIDRs    []*net.IPNet
+
+	envTrustedProxies string
+	envMutex          sync.RWMutex
+	envTrustedCIDRs   []*net.IPNet
 }
 
 func (c *Config) Init() *Config {
@@ -89,6 +98,10 @@ func PrepareTrustedCIDRs(trustedProxies []string) ([]*net.IPNet, error) {
 // Config.SetTrustedProxies(nil), then Context.ClientIP() will
 // return the remote address directly.
 func (c *Config) SetTrustedProxies(trustedProxies []string) error {
+
+	c.trustedMutex.Lock()
+	defer c.trustedMutex.Unlock()
+
 	c.trustedProxies = trustedProxies
 	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
 	if err != nil {
@@ -99,6 +112,9 @@ func (c *Config) SetTrustedProxies(trustedProxies []string) error {
 }
 
 func (c *Config) AddTrustedProxies(trustedProxies ...string) error {
+	c.trustedMutex.Lock()
+	defer c.trustedMutex.Unlock()
+
 	c.trustedProxies = append(c.trustedProxies, c.trustedProxies...)
 	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
 	if err != nil {
@@ -109,14 +125,28 @@ func (c *Config) AddTrustedProxies(trustedProxies ...string) error {
 }
 
 func (c *Config) TrustAll() *Config {
+	c.trustedMutex.Lock()
 	c.trustedProxies = make([]string, len(defaultTrustedProxies))
 	copy(c.trustedProxies, defaultTrustedProxies)
 	c.trustedCIDRs = defaultTrustedCIDRs
+	c.trustedMutex.Unlock()
 	return c
 }
 
 func (c *Config) SetTrustedProxiesByEnv() error {
 	envValue := os.Getenv(EnvKey)
+	c.envMutex.RLock()
+	oldEnvValue := c.envTrustedProxies
+	c.envMutex.RUnlock()
+	if oldEnvValue == envValue {
+		return nil
+	}
+	c.envMutex.Lock()
+	c.envTrustedProxies = envValue
+	if len(envValue) == 0 && len(oldEnvValue) > 0 {
+		c.envTrustedCIDRs = nil
+	}
+	c.envMutex.Unlock()
 	if len(envValue) == 0 {
 		return nil
 	}
@@ -129,9 +159,45 @@ func (c *Config) SetTrustedProxiesByEnv() error {
 		}
 	}
 	if len(trustedProxies) > 0 {
-		return c.SetTrustedProxies(trustedProxies)
+		trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
+		if err != nil {
+			return err
+		}
+		c.envMutex.Lock()
+		c.envTrustedCIDRs = trustedCIDRs
+		c.envMutex.Unlock()
 	}
 	return nil
+}
+
+func (c *Config) WatchEnvValue(ctx context.Context, dur time.Duration) error {
+	t := time.NewTicker(dur)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			err := c.SetTrustedProxiesByEnv()
+			if err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return context.Canceled
+		}
+	}
+}
+
+func (c *Config) StartWatchEnv(ctx context.Context, dur time.Duration) *Config {
+	err := c.SetTrustedProxiesByEnv()
+	if err != nil {
+		log.Println(err)
+	}
+	go func() {
+		err := c.WatchEnvValue(ctx, dur)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+	return c
 }
 
 // IsUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
@@ -146,12 +212,27 @@ func (c *Config) IsUnsafeTrustedProxies() bool {
 
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
 func (c *Config) isTrustedProxy(ip net.IP) bool {
-	if c.trustedCIDRs == nil {
-		return false
+	c.trustedMutex.RLock()
+	trustedCIDRs := c.trustedCIDRs
+	c.trustedMutex.RUnlock()
+
+	if trustedCIDRs != nil {
+		for _, cidr := range trustedCIDRs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
 	}
-	for _, cidr := range c.trustedCIDRs {
-		if cidr.Contains(ip) {
-			return true
+
+	c.envMutex.RLock()
+	envTrustedCIDRs := c.envTrustedCIDRs
+	c.envMutex.RUnlock()
+
+	if envTrustedCIDRs != nil {
+		for _, cidr := range envTrustedCIDRs {
+			if cidr.Contains(ip) {
+				return true
+			}
 		}
 	}
 	return false

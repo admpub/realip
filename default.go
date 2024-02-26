@@ -1,12 +1,14 @@
 package realip
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
-var defaultConfig = New().SetIgnorePrivateIP(true)
+var defaultConfig = New().SetIgnorePrivateIP(true).StartWatchEnv(context.Background(), time.Minute*5)
 
 func Default() *Config {
 	return defaultConfig
