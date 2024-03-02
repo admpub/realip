@@ -14,28 +14,37 @@ func Default() *Config {
 	return defaultConfig
 }
 
-var defaultTrustedProxies = []string{"0.0.0.0/0", "::/0"}
-var defaultUnsafeTrustedIPs = []net.IP{net.ParseIP("0.0.0.0"), net.ParseIP("::")}
-var defaultTrustedCIDRs = []*net.IPNet{
-	{ // 0.0.0.0/0 (IPv4)
-		IP:   net.IP{0x0, 0x0, 0x0, 0x0},
-		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0},
-	},
-	{ // ::/0 (IPv6)
-		IP:   net.IP{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-	},
-}
+var (
+	defaultTrustedProxies   = []string{"0.0.0.0/0", "::/0"}
+	defaultUnsafeTrustedIPs = []net.IP{net.ParseIP("0.0.0.0"), net.ParseIP("::")}
+	defaultTrustedCIDRs     = []*net.IPNet{
+		{ // 0.0.0.0/0 (IPv4)
+			IP:   net.IP{0x0, 0x0, 0x0, 0x0},
+			Mask: net.IPMask{0x0, 0x0, 0x0, 0x0},
+		},
+		{ // ::/0 (IPv6)
+			IP:   net.IP{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+		},
+	}
+	defaultPrivateCIDRs []*net.IPNet
+)
 
 // Should use canonical format of the header key s
 // https://golang.org/pkg/net/http/#CanonicalHeaderKey
-const HeaderXForwardedFor = "X-Forwarded-For"
-const HeaderXRealIP = "X-Real-Ip"
+const (
+	HeaderXForwardedFor = "X-Forwarded-For"
+	HeaderXRealIP       = "X-Real-Ip"
 
-// RFC7239 defines a new "Forwarded: " header designed to replace the
-// existing use of X-Forwarded-* headers.
-// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
-const HeaderForwarded = "Forwarded"
+	// RFC7239 defines a new "Forwarded: " header designed to replace the
+	// existing use of X-Forwarded-* headers.
+	// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
+	HeaderForwarded = "Forwarded"
+
+	// Cloudflare
+	HeaderCFConnectingIP = "Cf-Connecting-Ip"
+	HeaderTrueClientIP   = "True-Client-Ip"
+)
 
 func HeaderIsXForwardedFor(headerName string) bool {
 	return HeaderXForwardedFor == http.CanonicalHeaderKey(headerName)
@@ -53,7 +62,16 @@ func HeaderEquals(headerNameA string, headerNameB string) bool {
 	return strings.EqualFold(headerNameA, headerNameB)
 }
 
-var defaultPrivateCIDRs []*net.IPNet
+func SetPrivateCIDRs(maxCidrBlocks ...string) {
+	defaultPrivateCIDRs = make([]*net.IPNet, len(maxCidrBlocks))
+	for i, maxCidrBlock := range maxCidrBlocks {
+		cidr, err := ParseCIDR(maxCidrBlock)
+		if err != nil {
+			panic(err)
+		}
+		defaultPrivateCIDRs[i] = cidr
+	}
+}
 
 func init() {
 	maxCidrBlocks := []string{
@@ -66,13 +84,5 @@ func init() {
 		"fc00::/7",       // unique local address IPv6
 		"fe80::/10",      // link local address IPv6
 	}
-
-	defaultPrivateCIDRs = make([]*net.IPNet, len(maxCidrBlocks))
-	for i, maxCidrBlock := range maxCidrBlocks {
-		cidr, err := ParseCIDR(maxCidrBlock)
-		if err != nil {
-			panic(err)
-		}
-		defaultPrivateCIDRs[i] = cidr
-	}
+	SetPrivateCIDRs(maxCidrBlocks...)
 }

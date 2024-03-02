@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -21,16 +22,17 @@ func New() *Config {
 
 type Config struct {
 
-	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
+	// forwardedByClientIP if enabled, client IP will be parsed from the request's headers that
 	// match those stored at `Config.RemoteIPHeaders`. If no IP was
 	// fetched, it falls back to the IP obtained from
 	// `Context.Request().RemoteAddress()`.
-	ForwardedByClientIP bool
-	// RemoteIPHeaders list of headers used to obtain the client IP when
+	forwardedByClientIP atomic.Bool
+	// remoteIPHeaders list of headers used to obtain the client IP when
 	// `Config.ForwardedByClientIP` is `true` and
 	// `Context.Request().RemoteAddress()` is matched by at least one of the
 	// network origins of list defined by `Config.SetTrustedProxies()`.
-	RemoteIPHeaders []string
+	remoteIPHeaders []string
+	ipHeaderMutex   sync.RWMutex
 
 	ignorePrivateIP bool
 	trustedMutex    sync.RWMutex
@@ -43,8 +45,8 @@ type Config struct {
 }
 
 func (c *Config) Init() *Config {
-	c.ForwardedByClientIP = true
-	c.RemoteIPHeaders = []string{HeaderForwarded, HeaderXForwardedFor, HeaderXRealIP}
+	c.forwardedByClientIP.Store(true)
+	c.SetRemoteIPHeaders(HeaderForwarded, HeaderXForwardedFor, HeaderXRealIP)
 	c.ignorePrivateIP = false
 	return c.TrustAll()
 }
@@ -55,17 +57,21 @@ func (c *Config) SetIgnorePrivateIP(ignorePrivateIP bool) *Config {
 }
 
 func (c *Config) SetForwardedByClientIP(forwardedByClientIP bool) *Config {
-	c.ForwardedByClientIP = forwardedByClientIP
+	c.forwardedByClientIP.Store(forwardedByClientIP)
 	return c
 }
 
 func (c *Config) SetRemoteIPHeaders(remoteIPHeaders ...string) *Config {
-	c.RemoteIPHeaders = remoteIPHeaders
+	c.ipHeaderMutex.Lock()
+	c.remoteIPHeaders = remoteIPHeaders
+	c.ipHeaderMutex.Unlock()
 	return c
 }
 
 func (c *Config) AddRemoteIPHeader(remoteIPHeaders ...string) *Config {
-	c.RemoteIPHeaders = append(c.RemoteIPHeaders, remoteIPHeaders...)
+	c.ipHeaderMutex.Lock()
+	c.remoteIPHeaders = append(c.remoteIPHeaders, remoteIPHeaders...)
+	c.ipHeaderMutex.Unlock()
 	return c
 }
 
@@ -316,12 +322,16 @@ func (c *Config) ClientIP(remoteAddress string, header func(string) string) stri
 		return ""
 	}
 	trusted := c.isTrustedProxy(remoteIP)
-
-	if trusted && c.ForwardedByClientIP && c.RemoteIPHeaders != nil {
-		for _, headerName := range c.RemoteIPHeaders {
-			ip, valid := c.ValidateIPHeader(header(headerName), headerName, c.ignorePrivateIP)
-			if valid {
-				return ip
+	if trusted && c.forwardedByClientIP.Load() {
+		c.ipHeaderMutex.RLock()
+		remoteIPHeaders := c.remoteIPHeaders
+		c.ipHeaderMutex.RUnlock()
+		if remoteIPHeaders != nil {
+			for _, headerName := range remoteIPHeaders {
+				ip, valid := c.ValidateIPHeader(header(headerName), headerName, c.ignorePrivateIP)
+				if valid {
+					return ip
+				}
 			}
 		}
 	}

@@ -16,6 +16,12 @@ func TestCanonicalHeaderKey(t *testing.T) {
 	if http.CanonicalHeaderKey("Forwarded") != HeaderForwarded {
 		t.Fatalf("HeaderForwarded: expected %s but get %s", http.CanonicalHeaderKey("Forwarded"), HeaderForwarded)
 	}
+	if http.CanonicalHeaderKey("CF-Connecting-IP") != HeaderCFConnectingIP {
+		t.Fatalf("HeaderForwarded: expected %s but get %s", http.CanonicalHeaderKey("CF-Connecting-IP"), HeaderCFConnectingIP)
+	}
+	if http.CanonicalHeaderKey("True-Client-IP") != HeaderTrueClientIP {
+		t.Fatalf("HeaderForwarded: expected %s but get %s", http.CanonicalHeaderKey("True-Client-IP"), HeaderTrueClientIP)
+	}
 }
 
 func TestIsPrivateAddr(t *testing.T) {
