@@ -33,6 +33,8 @@ var (
 // Should use canonical format of the header key s
 // https://golang.org/pkg/net/http/#CanonicalHeaderKey
 const (
+	// - Default
+
 	HeaderXForwardedFor = "X-Forwarded-For"
 	HeaderXRealIP       = "X-Real-Ip"
 
@@ -41,7 +43,8 @@ const (
 	// e.g. Forwarded: for=192.0.2.60;proto=https;by=203.0.113.43
 	HeaderForwarded = "Forwarded"
 
-	// Cloudflare
+	// - Cloudflare -
+
 	HeaderCFConnectingIP = "Cf-Connecting-Ip"
 	HeaderTrueClientIP   = "True-Client-Ip"
 )

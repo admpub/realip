@@ -21,6 +21,7 @@ func New() *Config {
 }
 
 type Config struct {
+	proxyType atomic.Value
 
 	// forwardedByClientIP if enabled, client IP will be parsed from the request's headers that
 	// match those stored at `Config.RemoteIPHeaders`. If no IP was
@@ -34,7 +35,7 @@ type Config struct {
 	remoteIPHeaders []string
 	ipHeaderMutex   sync.RWMutex
 
-	ignorePrivateIP bool
+	ignorePrivateIP atomic.Bool
 	trustedMutex    sync.RWMutex
 	trustedProxies  []string
 	trustedCIDRs    []*net.IPNet
@@ -46,13 +47,28 @@ type Config struct {
 
 func (c *Config) Init() *Config {
 	c.forwardedByClientIP.Store(true)
-	c.SetRemoteIPHeaders(HeaderForwarded, HeaderXForwardedFor, HeaderXRealIP)
-	c.ignorePrivateIP = false
+	c.SetProxyType(ProxyDefault)
+	c.ignorePrivateIP.Store(false)
 	return c.TrustAll()
 }
 
+func (c *Config) SetProxyType(proxyType string) *Config {
+	old, y := c.proxyType.Load().(string)
+	if y && proxyType == old {
+		return c
+	}
+	c.proxyType.Store(proxyType)
+	hdrs, ok := headers[proxyType]
+	if ok {
+		c.SetRemoteIPHeaders(hdrs...)
+	} else if proxyType != ProxyDefault {
+		c.SetRemoteIPHeaders(headers[ProxyDefault]...)
+	}
+	return c
+}
+
 func (c *Config) SetIgnorePrivateIP(ignorePrivateIP bool) *Config {
-	c.ignorePrivateIP = ignorePrivateIP
+	c.ignorePrivateIP.Store(ignorePrivateIP)
 	return c
 }
 
@@ -76,7 +92,7 @@ func (c *Config) AddRemoteIPHeader(remoteIPHeaders ...string) *Config {
 }
 
 func (c *Config) IgnorePrivateIP() bool {
-	return c.ignorePrivateIP
+	return c.ignorePrivateIP.Load()
 }
 
 func PrepareTrustedCIDRs(trustedProxies []string) ([]*net.IPNet, error) {
@@ -326,9 +342,10 @@ func (c *Config) ClientIP(remoteAddress string, header func(string) string) stri
 		c.ipHeaderMutex.RLock()
 		remoteIPHeaders := c.remoteIPHeaders
 		c.ipHeaderMutex.RUnlock()
+		ignorePrivateIP := c.ignorePrivateIP.Load()
 		if remoteIPHeaders != nil {
 			for _, headerName := range remoteIPHeaders {
-				ip, valid := c.ValidateIPHeader(header(headerName), headerName, c.ignorePrivateIP)
+				ip, valid := c.ValidateIPHeader(header(headerName), headerName, ignorePrivateIP)
 				if valid {
 					return ip
 				}

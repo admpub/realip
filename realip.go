@@ -19,13 +19,13 @@ func XRealIP(xRealIP, xForwardedFor, remoteAddr string) string {
 		return XRemoteIP(remoteAddr)
 	}
 
-	ip, valid := defaultConfig.ValidateIPHeader(xForwardedFor, HeaderXForwardedFor, defaultConfig.ignorePrivateIP)
+	ip, valid := defaultConfig.ValidateIPHeader(xForwardedFor, HeaderXForwardedFor, defaultConfig.IgnorePrivateIP())
 	if valid {
 		return ip
 	}
 
 	// If nothing succeed, return X-Real-IP
-	ip, valid = defaultConfig.ValidateIPHeader(xRealIP, HeaderXRealIP, defaultConfig.ignorePrivateIP)
+	ip, valid = defaultConfig.ValidateIPHeader(xRealIP, HeaderXRealIP, defaultConfig.IgnorePrivateIP())
 	if valid {
 		return ip
 	}
