@@ -150,4 +150,12 @@ func TestClientIP(t *testing.T) {
 	if expected != actual {
 		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
 	}
+
+	defaultConfig.SetTrustedProxies(nil)
+	actual = defaultConfig.ClientIP(`127.0.0.1:53878`, header)
+	expected = `119.14.55.13`
+	if expected != actual {
+		t.Errorf("TestClientIP: expected %s but get %s", expected, actual)
+	}
+
 }

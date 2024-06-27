@@ -121,14 +121,18 @@ func PrepareTrustedCIDRs(trustedProxies []string) ([]*net.IPNet, error) {
 // Config.SetTrustedProxies(nil), then Context.ClientIP() will
 // return the remote address directly.
 func (c *Config) SetTrustedProxies(trustedProxies []string) error {
+	if trustedProxies == nil {
+		c.trustedMutex.RLock()
+		isDefault := c.trustedDefault
+		c.trustedMutex.RUnlock()
+		if !isDefault {
+			c.TrustAll()
+		}
+		return nil
+	}
 
 	c.trustedMutex.Lock()
 	defer c.trustedMutex.Unlock()
-
-	if trustedProxies == nil && !c.trustedDefault {
-		c.TrustAll()
-		return nil
-	}
 
 	c.trustedProxies = trustedProxies
 	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
