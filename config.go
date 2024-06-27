@@ -39,6 +39,7 @@ type Config struct {
 	trustedMutex    sync.RWMutex
 	trustedProxies  []string
 	trustedCIDRs    []*net.IPNet
+	trustedDefault  bool
 
 	envTrustedProxies string
 	envMutex          sync.RWMutex
@@ -124,12 +125,18 @@ func (c *Config) SetTrustedProxies(trustedProxies []string) error {
 	c.trustedMutex.Lock()
 	defer c.trustedMutex.Unlock()
 
+	if trustedProxies == nil && !c.trustedDefault {
+		c.TrustAll()
+		return nil
+	}
+
 	c.trustedProxies = trustedProxies
 	trustedCIDRs, err := PrepareTrustedCIDRs(trustedProxies)
 	if err != nil {
 		return err
 	}
 	c.trustedCIDRs = trustedCIDRs
+	c.trustedDefault = false
 	return nil
 }
 
@@ -151,6 +158,7 @@ func (c *Config) TrustAll() *Config {
 	c.trustedProxies = make([]string, len(defaultTrustedProxies))
 	copy(c.trustedProxies, defaultTrustedProxies)
 	c.trustedCIDRs = defaultTrustedCIDRs
+	c.trustedDefault = true
 	c.trustedMutex.Unlock()
 	return c
 }
