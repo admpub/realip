@@ -319,8 +319,8 @@ func (c *Config) ClientIP(remoteAddress string, header func(string) string) stri
 		c.ipHeaderMutex.RLock()
 		remoteIPHeaders := c.remoteIPHeaders
 		c.ipHeaderMutex.RUnlock()
-		ignorePrivateIP := c.ignorePrivateIP.Load()
 		if remoteIPHeaders != nil {
+			ignorePrivateIP := c.ignorePrivateIP.Load()
 			for _, headerName := range remoteIPHeaders {
 				ip, valid := c.ValidateIPHeader(header(headerName), headerName, ignorePrivateIP)
 				if valid {
@@ -349,6 +349,7 @@ func (c *Config) RemoteIP(remoteAddress string) string {
 	}
 	ip, _, err := net.SplitHostPort(remoteAddress)
 	if err != nil {
+		log.Printf(`[realip] failed to net.SplitHostPort(%q): %v`, remoteAddress, err.Error())
 		return ""
 	}
 	return ip
