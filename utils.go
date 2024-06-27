@@ -61,3 +61,33 @@ func ParseCIDR(ipStr string) (*net.IPNet, error) {
 	_, cidrNet, err := net.ParseCIDR(ipStr)
 	return cidrNet, err
 }
+
+func ParseHeaderForwarded(headerValue string) []string {
+	values := strings.Split(headerValue, ";")
+	items := make([]string, 0, len(values))
+	for _, item := range values {
+		item = strings.TrimSpace(item)
+		if len(item) == 0 {
+			continue
+		}
+		if !strings.HasPrefix(item, `for=`) {
+			continue
+		}
+		for _, vfor := range strings.Split(item, ",") {
+			vfor = strings.TrimSpace(vfor)
+			if len(vfor) == 0 {
+				continue
+			}
+			if !strings.HasPrefix(vfor, `for=`) {
+				continue
+			}
+			vfor = strings.TrimPrefix(vfor, `for=`)
+			vfor = strings.Trim(vfor, `"`)
+			if len(vfor) == 0 {
+				continue
+			}
+			items = append(items, vfor)
+		}
+	}
+	return items
+}

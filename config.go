@@ -267,30 +267,7 @@ func (c *Config) ValidateIPHeader(headerValue string, headerName string, ignoreP
 	}
 	var items []string
 	if headerName == HeaderForwarded {
-		for _, item := range strings.Split(headerValue, ";") {
-			item = strings.TrimSpace(item)
-			if len(item) == 0 {
-				continue
-			}
-			if !strings.HasPrefix(item, `for=`) {
-				continue
-			}
-			for _, vfor := range strings.Split(item, ",") {
-				vfor = strings.TrimSpace(vfor)
-				if len(vfor) == 0 {
-					continue
-				}
-				if !strings.HasPrefix(vfor, `for=`) {
-					continue
-				}
-				vfor = strings.TrimPrefix(vfor, `for=`)
-				vfor = strings.Trim(vfor, `"`)
-				if len(vfor) == 0 {
-					continue
-				}
-				items = append(items, vfor)
-			}
-		}
+		items = ParseHeaderForwarded(headerValue)
 	} else {
 		items = strings.Split(headerValue, ",")
 	}
