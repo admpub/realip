@@ -246,11 +246,9 @@ func (c *Config) isTrustedProxy(ip net.IP) bool {
 	trustedCIDRs := c.trustedCIDRs
 	c.trustedMutex.RUnlock()
 
-	if trustedCIDRs != nil {
-		for _, cidr := range trustedCIDRs {
-			if cidr.Contains(ip) {
-				return true
-			}
+	for _, cidr := range trustedCIDRs {
+		if cidr.Contains(ip) {
+			return true
 		}
 	}
 
@@ -258,11 +256,9 @@ func (c *Config) isTrustedProxy(ip net.IP) bool {
 	envTrustedCIDRs := c.envTrustedCIDRs
 	c.envMutex.RUnlock()
 
-	if envTrustedCIDRs != nil {
-		for _, cidr := range envTrustedCIDRs {
-			if cidr.Contains(ip) {
-				return true
-			}
+	for _, cidr := range envTrustedCIDRs {
+		if cidr.Contains(ip) {
+			return true
 		}
 	}
 	return false
